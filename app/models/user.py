@@ -52,3 +52,4 @@ class User(Base):
     )
 
     accounts = relationship("Account", back_populates="user")
+    categories = relationship("Category", back_populates="user")
