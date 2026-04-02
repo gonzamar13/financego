@@ -8,7 +8,7 @@ import uuid
 from app.db.session import get_db
 from app.models.user import User
 from app.core.security import hash_password, verify_password, create_access_token
-from app.schemas.auth import RegisterRequest, TokenResponse
+from app.schemas.auth import RegisterRequest, TokenResponse, UserResponse
 from app.core.config import JWT_SECRET, JWT_ALG
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -17,14 +17,32 @@ oauth_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 @router.post("/register")
 def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    existing_user = db.execute(
+    existing_email = db.execute(
         select(User).where(User.email == data.email)
-    ).scalar_one_or_none()
+    ).scalar_one_or_none() 
 
-    if existing_user:
+    if existing_email:
         raise HTTPException(status_code=400, detail= "Email ya registrado")
     
+    existing_username = db.execute(
+        select(User).where(User.username == data.username)
+    ).scalar_one_or_none() 
+
+    if existing_username:
+        raise HTTPException(status_code=400, detail= "Username ya en uso")
+    
+    existing_document_number = db.execute(
+        select(User).where(User.document_number == data.document_number)
+    ).scalar_one_or_none()
+
+    if existing_document_number:
+        raise HTTPException(status_code=400, detail= "Número de documento ya registrado")
+
     new_user = User(
+        first_name = data.first_name,
+        last_name = data.last_name,
+        document_type=data.document_type,
+        document_number=data.document_number,
         username = data.username, 
         email = data.email, 
         hashed_password = hash_password(data.password)
@@ -81,11 +99,7 @@ def get_current_user(token: str = Depends(oauth_scheme), db: Session = Depends(g
     
     return user
 
-@router.get("/me")
+@router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
-    return{
-        "id": str(current_user.id), 
-        "username": current_user.username, 
-        "email": current_user.email
-    }
+    return current_user
 
