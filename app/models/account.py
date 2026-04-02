@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from sqlalchemy import String, Boolean, ForeignKey, DateTime
 from sqlalchemy.dialects.postgresql import UUID
@@ -23,7 +24,7 @@ class Account(Base):
         nullable=False
     )
 
-    name: Mapped[str] = mapped_column(
+    account_name: Mapped[str] = mapped_column(
         String(100),
         nullable=False
     )
@@ -31,6 +32,16 @@ class Account(Base):
     type: Mapped[str] = mapped_column(
         String(20),
         nullable=False
+    )
+
+    financial_institution: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    account_number: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True
     )
 
     is_active: Mapped[bool] = mapped_column(
