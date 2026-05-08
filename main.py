@@ -7,6 +7,8 @@ from app.routers.auth import router as auth_router
 from app.routers.accounts import router as accounts_router
 from app.routers.category import router as categories_router
 from app.routers.transaction import router as transactions_router
+from app.routers.debts import router as debts_router
+from app.routers.budgets import router as budgets_router
 
 from app.db.base import Base
 from app.db.session import engine, get_db
@@ -15,6 +17,9 @@ from app.models.user import User
 from app.models.account import Account
 from app.models.category import Category
 from app.models.transaction import Transaction
+from app.models.debt import Debt
+from app.models.debt_payment import DebtPayment
+from app.models.budget import Budget
 
 Base.metadata.create_all(bind=engine)
 
@@ -36,6 +41,8 @@ app.include_router(auth_router)
 app.include_router(accounts_router)
 app.include_router(categories_router)
 app.include_router(transactions_router)
+app.include_router(debts_router)
+app.include_router(budgets_router)
 
 @app.get("/health")
 def health_check():
@@ -45,5 +52,3 @@ def health_check():
 def db_test(db: Session = Depends(get_db)):
     db.execute(text("SELECT 1"))
     return {"db": "ok"}
-
-
