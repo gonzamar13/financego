@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from app.core.limiter import limiter
 
 from app.routers.auth import router as auth_router
 from app.routers.accounts import router as accounts_router
@@ -11,7 +13,7 @@ from app.routers.debts import router as debts_router
 from app.routers.budgets import router as budgets_router
 
 from app.db.base import Base
-from app.db.session import engine, get_db
+from app.db.session import engine
 
 from app.models.user import User
 from app.models.account import Account
@@ -24,6 +26,8 @@ from app.models.budget import Budget
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="FinanceGO")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,8 +51,3 @@ app.include_router(budgets_router)
 @app.get("/health")
 def health_check():
     return {"status": "OK"}
-
-@app.get("/db-test")
-def db_test(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
-    return {"db": "ok"}

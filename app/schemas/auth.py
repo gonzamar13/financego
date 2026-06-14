@@ -15,7 +15,7 @@ class RegisterRequest(BaseModel):
     document_type: DocumentType
     document_number: str
     email: EmailStr
-    password: str = Field(min_length=6, max_length=72)
+    password: str = Field(min_length=8, max_length=72)
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

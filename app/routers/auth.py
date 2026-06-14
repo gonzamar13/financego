@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import uuid
+
+from app.core.limiter import limiter
 
 from app.db.session import get_db
 from app.models.user import User
@@ -22,21 +24,21 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     ).scalar_one_or_none() 
 
     if existing_email:
-        raise HTTPException(status_code=400, detail= "Email ya registrado")
+        raise HTTPException(status_code=400, detail="Los datos ingresados no están disponibles")
     
     existing_username = db.execute(
         select(User).where(User.username == data.username)
     ).scalar_one_or_none() 
 
     if existing_username:
-        raise HTTPException(status_code=400, detail= "Username ya en uso")
+        raise HTTPException(status_code=400, detail="Los datos ingresados no están disponibles")
     
     existing_document_number = db.execute(
         select(User).where(User.document_number == data.document_number)
     ).scalar_one_or_none()
 
     if existing_document_number:
-        raise HTTPException(status_code=400, detail= "Número de documento ya registrado")
+        raise HTTPException(status_code=400, detail="Los datos ingresados no están disponibles")
 
     new_user = User(
         first_name = data.first_name,
@@ -55,7 +57,8 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     return{"message":"Usuario creado correctamente"}
 
 @router.post("/login", response_model=TokenResponse)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # form_data.username en realidad será tu email
     user = db.execute(
         select(User).where(User.email == form_data.username)
