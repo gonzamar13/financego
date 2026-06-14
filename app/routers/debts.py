@@ -14,6 +14,7 @@ from app.schemas.debt import (
     DebtSummary,
     DebtUpdate,
 )
+from app.schemas.payoff import PayoffRequest, PayoffResponse
 from app.services.debt_service import (
     create_debt,
     create_payment,
@@ -25,6 +26,7 @@ from app.services.debt_service import (
     list_payments,
     update_debt,
 )
+from app.services.payoff_service import compute_payoff_plan
 
 router = APIRouter(prefix="/debts", tags=["debts"])
 
@@ -52,6 +54,16 @@ def summary_route(
     current_user: User = Depends(get_current_user),
 ):
     return get_summary(db, current_user)
+
+
+@router.post("/payoff-plan", response_model=PayoffResponse)
+def payoff_plan_route(
+    data: PayoffRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    debts = list_debts(db, current_user)
+    return compute_payoff_plan(db, current_user, data, debts)
 
 
 @router.get("/{debt_id}", response_model=DebtResponse)
