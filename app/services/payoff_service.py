@@ -101,12 +101,16 @@ def _simulate(
             d.balance += interest
             d.interest_accrued += interest
 
+        # Rastrear pago destinado a cada deuda este mes
+        payments_this_month: dict = {}
+
         # Primero: cuotas fijas de los préstamos (no negociables)
         budget_left = monthly_budget
         for d in debts:
             if d.balance <= ZERO or d.debt_type != "loan":
                 continue
             payment = min(d.installment, d.balance, budget_left)
+            payments_this_month[d.debt_id] = payment
             d.balance = (d.balance - payment).quantize(CENT, ROUND_HALF_UP)
             budget_left -= payment
             if d.balance <= ZERO:
@@ -126,6 +130,7 @@ def _simulate(
             if budget_left <= ZERO:
                 break
             payment = min(d.balance, budget_left)
+            payments_this_month[d.debt_id] = payment
             d.balance = (d.balance - payment).quantize(CENT, ROUND_HALF_UP)
             budget_left -= payment
             if d.balance <= ZERO:
@@ -135,10 +140,24 @@ def _simulate(
                     d.paid_off_date = snapshot_date
 
         total_remaining = sum((d.balance for d in debts), ZERO)
+
+        # Desglose por deuda: incluye las que recibieron pago o aún tienen saldo
+        breakdown = [
+            {
+                "debt_id": d.debt_id,
+                "name": d.name,
+                "paid": payments_this_month.get(d.debt_id, ZERO).quantize(CENT, ROUND_HALF_UP),
+                "remaining": d.balance.quantize(CENT, ROUND_HALF_UP),
+            }
+            for d in debts
+            if payments_this_month.get(d.debt_id, ZERO) > ZERO or d.balance > ZERO
+        ]
+
         snapshots.append({
             "month": m,
             "date": snapshot_date,
             "total_remaining": total_remaining.quantize(CENT, ROUND_HALF_UP),
+            "payments": breakdown,
         })
 
         if total_remaining <= ZERO:

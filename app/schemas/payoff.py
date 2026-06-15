@@ -17,10 +17,18 @@ class PayoffRequest(BaseModel):
     strategy: StrategyType = StrategyType.AVALANCHE
 
 
+class MonthPaymentDetail(BaseModel):
+    debt_id: UUID
+    name: str
+    paid: Decimal
+    remaining: Decimal
+
+
 class MonthSnapshot(BaseModel):
     month: int
     date: date
     total_remaining: Decimal
+    payments: list[MonthPaymentDetail]
 
 
 class DebtPayoffDetail(BaseModel):
